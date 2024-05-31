@@ -110,64 +110,7 @@ inner join customer
 	using(customer_id)
 group by month(rental_date);
 
-
-
-
-
--- Step 1: Extract rental data with month and customer information
-WITH rental_months AS (
-    SELECT 
-        customer_id,
-        DATE_FORMAT(rental_date, '%Y-%m') AS rental_month
-    FROM 
-        rental
-    GROUP BY 
-        customer_id, rental_month
-),
-
--- Step 2: Aggregate customers by month
-monthly_customers AS (
-    SELECT 
-        rental_month,
-        GROUP_CONCAT(DISTINCT customer_id) AS customer_list
-    FROM 
-        rental_months
-    GROUP BY 
-        rental_month
-),
-
--- Step 3: Use LAG() to get the previous month's customer list
-customer_comparison AS (
-    SELECT 
-        rental_month,
-        customer_list,
-        LAG(customer_list) OVER (ORDER BY rental_month) AS previous_month_customers
-    FROM 
-        monthly_customers
-);
-
--- Step 4: Identify retained customers by comparing current and previous month lists
-
-WITH month_info as (
-SELECT 
-month(rental_date) as rental_month,
-customer_id 
-FROM sakila.rental
-) ,
- prev_month AS (
-SELECT 
-rental_month,
-customer_id, 
-LAG(rental_month) OVER (partition by customer_id) as previous_month
-FROM month_info  
-)
-SELECT
-    COUNT(DISTINCT customer_id) AS active_customers
-FROM prev_month
-WHERE previous_month IS NOT NULL;
-
-
-
+# step 4 - count the recurring customers
 
 WITH rental_months AS (
     SELECT 
@@ -184,7 +127,7 @@ WITH rental_months AS (
     from rental_months
 )
 
-select rental_month, sum(is_recurring), count(*)
+select rental_month, sum(is_recurring) as recurring_customers, count(*)
 from recurring
 group by rental_month;
 
